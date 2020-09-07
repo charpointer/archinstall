@@ -65,7 +65,7 @@ def install():
     system('vim /etc/pacman.d/mirrorlist')
 
     log('info', 'Running pacstrap to install base packages')
-    system('pacstrap /mnt base linux linux-firmware dhcpcd vim')
+    system('pacstrap /mnt base linux linux-firmware dhcpcd vim python')
 
     # Generate an fstab file
     log('info', 'Generating an fstab file')
@@ -73,8 +73,8 @@ def install():
 
     # Download chroot.py
     log('info', 'Downloading chroot install script..')
-    url = 'https://raw.githubusercontent.com/chxrlt/archinstall/master/install/chroot.py'
-    run(f'curl -L "{url}" > /mnt/chroot.py')
+    #url = ''
+    system(f'curl -L https://raw.githubusercontent.com/chxrlt/archinstall/master/install/chroot.py > /mnt/chroot.py')
 
     log('info', 'Entering a chroot, make sure to run chroot.py when inside!')
     system('arch-chroot /mnt')

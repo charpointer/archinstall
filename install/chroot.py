@@ -107,10 +107,13 @@ def install():
         root_par = input('Which partition is your root partition? ')
 
         log('info', f'Installing GRUB to BIOS/MBR')
-        run(f'grub-install --target=i386-pc {root_par} --recheck')
+        run(f'grub-install {root_par}')
     sleep(1)
 
     run('grub-mkconfig -o /boot/grub/grub.cfg')
+
+    # Enable dhcpcd service
+    system('systemctl enable dhcpcd')
 
     log('success', 'Successfully(?) installed GRUB. Exiting the chroot.')
     system('exit && echo "Type reboot to reboot the system into a working install"')
