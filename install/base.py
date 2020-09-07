@@ -3,7 +3,6 @@ from time import sleep
 from sys import exit
 from os import system
 
-
 # Variables
 keymap = ('uk', 'gb') # vconsole, xserver
 timezone = 'Europe/London'
@@ -72,75 +71,13 @@ def install():
     log('info', 'Generating an fstab file')
     run('genfstab -U /mnt >> /mnt/etc/fstab')
 
-    chroot_install()
+    # Download chroot.py
+    log('info', 'Downloading chroot install script..')
+    url = 'https://raw.githubusercontent.com/chxrlt/archinstall/master/install/chroot.py'
+    run(f'curl -L {url} > /mnt/chroot.py')
 
-def chroot_install():
-    (rc, _) = run('arch-chroot /mnt')
-    if rc == 0:
-        log('success', 'We are now chrooted into the new install!')
-    
-    # The rest of the install continues inside a chroot
-
-    # Set the timezone
-    log('info', 'Setting the timezone and running hwclock --systohc')
-
-    run(f'ln -sf /usr/share/zoneinfo/{timezone} /etc/localtime')
-    run('hwclock --systohc')
-
-    # Generate locales
-    log('info', 'Opening up /etc/locale.gen for editing')
-    sleep(2)
-    system('vim /etc/locale.gen')
-
-    (rc, _) = run('locale-gen')
-    if rc == 0:
-        log('success', 'Successfully (re)generated locales!')
-    else:
-        log('error', 'Failed to generate locales')
-        exit(1)
-
-    log('info', 'Generating /etc/locale.conf')
-    run(f'echo "LANG={lang}.UTF-8" > /etc/locale.conf')
-
-    # Keyboard layout
-    log('info', 'Making keyboard changes persistent in /etc/vconsole.conf')
-    run(f'echo "KEYMAP={keymap[0]}" > /etc/vconsole.conf')
-
-    # Setup the hostname
-    log('info', 'Creating /etc/hostname')
-    run(f'echo "{hostname}" > /etc/hostname')
-
-    log('info', 'Opening up /etc/hosts for editing')
-    log('info', 'Please follow https://wiki.archlinux.org/index.php/Hostname')
-    sleep(2)
-    system('vim /etc/hosts')
-
-    log('info', 'Setting up root password. Please enter a new password for root.')
-    system('passwd')
-
-    # Updating pacman
-    log('info', 'Updating pacman database')
-    system('pacman -Syu')
-
-    # Install GRUB
-    log('info', 'Installing GRUB')
-    system('pacman -S dosfstools os-prober grub intel-ucode')
-
-    # efi_par = input('Which partition is your EFI partition? ')
-    # run('mkdir /boot/efi')
-    # (rc, _) = run(f'mount {efi_par} /boot/efi')
-
-    # if rc == 0:
-    #     log('success', f'Successfully mounted {efi_par} to /boot/efi')
-    # else:
-    #     log('error', f'Failed to mount {efi_par} to /boot/efi')
-    #     exit(1)
-
-    log('info', 'Running grub-install and grub-mkconfig')
-    run('grub-install --target=i386-pc --bootloader-id=grub --recheck')
-    #run('grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck')
-    sleep(1)
-    run('grub-mkconfig -o /boot/grub/grub.cfg')
+    log('info', 'Entering a chroot, make sure to run chroot.py when inside!')
+    system('arch-chroot /mnt')
 
 def partition():
     # Partion wizard to ease and automate partitioning the disks
