@@ -74,7 +74,7 @@ def install():
     # Download chroot.py
     log('info', 'Downloading chroot install script..')
     url = 'https://raw.githubusercontent.com/chxrlt/archinstall/master/install/chroot.py'
-    run(f'curl -L {url} > /mnt/chroot.py')
+    run(f'curl -L "{url}" > /mnt/chroot.py')
 
     log('info', 'Entering a chroot, make sure to run chroot.py when inside!')
     system('arch-chroot /mnt')

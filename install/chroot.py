@@ -1,4 +1,5 @@
-# This script will be automatically downloaded before entering the chroot
+# This script will be automatically downloaded before entering the chroot.
+# Edit as needed, then make sure to run it inside the chroot
 
 from subprocess import check_output, CalledProcessError
 from time import sleep
@@ -103,10 +104,15 @@ def install():
         log('info', f'Installing GRUB to EFI ({efi_par}')
         run('grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck')
     else:
+        root_par = input('Which partition is your root partition? ')
+
         log('info', f'Installing GRUB to BIOS/MBR')
-        run('grub-install --target=i386-pc --bootloader-id=grub --recheck')
+        run(f'grub-install --target=i386-pc {root_par} --recheck')
     sleep(1)
-    
+
     run('grub-mkconfig -o /boot/grub/grub.cfg')
+
+    log('success', 'Successfully(?) installed GRUB. Exiting the chroot.')
+    system('exit && echo "Type reboot to reboot the system into a working install"')
 
 install()
