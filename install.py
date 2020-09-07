@@ -54,7 +54,7 @@ def install():
 
     # Update the system clock
     log('info', 'Running timedatectl to update the system clock')
-    run('timedate ctl set-ntp true')
+    run('timedatectl set-ntp true')
 
     # Partitioning
     log('info', 'Entering partition()')
@@ -62,10 +62,11 @@ def install():
 
     # Install base packages with pacstrap
     log('info', 'Opening up /etc/pacman.d/mirrorlist for editing')
-    run('vim /etc/pacman.d/mirrorlist')
+    sleep(2)
+    system('vim /etc/pacman.d/mirrorlist')
 
     log('info', 'Running pacstrap to install base packages')
-    run('pacstrap /mnt base linux linux-firmware dhcpcd vim')
+    system('pacstrap /mnt base linux linux-firmware dhcpcd vim')
 
     # Generate an fstab file
     log('info', 'Generating an fstab file')
@@ -88,7 +89,8 @@ def chroot_install():
 
     # Generate locales
     log('info', 'Opening up /etc/locale.gen for editing')
-    run('vim /etc/locale.gen')
+    sleep(2)
+    system('vim /etc/locale.gen')
 
     (rc, _) = run('locale-gen')
     if rc == 0:
@@ -109,27 +111,34 @@ def chroot_install():
     run(f'echo "{hostname}" > /etc/hostname')
 
     log('info', 'Opening up /etc/hosts for editing')
-    run('vim /etc/hosts')
+    log('info', 'Please follow https://wiki.archlinux.org/index.php/Hostname')
+    sleep(2)
+    system('vim /etc/hosts')
 
     log('info', 'Setting up root password. Please enter a new password for root.')
     system('passwd')
 
+    # Updating pacman
+    log('info', 'Updating pacman database')
+    system('pacman -Syu')
+
     # Install GRUB
     log('info', 'Installing GRUB')
-    run('pacman -S dosfstools os-prober grub efibootmgr intel-ucode')
+    system('pacman -S dosfstools os-prober grub intel-ucode')
 
-    efi_par = input('Which partition is your EFI partition? ')
-    run('mkdir /boot/efi')
-    (rc, _) = run(f'mount {efi_par} /boot/efi')
+    # efi_par = input('Which partition is your EFI partition? ')
+    # run('mkdir /boot/efi')
+    # (rc, _) = run(f'mount {efi_par} /boot/efi')
 
-    if rc == 0:
-        log('success', f'Successfully mounted {efi_par} to /boot/efi')
-    else:
-        log('error', f'Failed to mount {efi_par} to /boot/efi')
-        exit(1)
+    # if rc == 0:
+    #     log('success', f'Successfully mounted {efi_par} to /boot/efi')
+    # else:
+    #     log('error', f'Failed to mount {efi_par} to /boot/efi')
+    #     exit(1)
 
     log('info', 'Running grub-install and grub-mkconfig')
-    run('grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck')
+    run('grub-install --target=i386-pc --bootloader-id=grub --recheck')
+    #run('grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck')
     sleep(1)
     run('grub-mkconfig -o /boot/grub/grub.cfg')
 
