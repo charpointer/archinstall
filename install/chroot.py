@@ -115,7 +115,8 @@ def install():
     # Enable dhcpcd service
     system('systemctl enable dhcpcd')
 
-    log('success', 'Successfully(?) installed GRUB. Exiting the chroot.')
-    system('exit && echo "Type reboot to reboot the system into a working install"')
+    log('success', 'Successfully(?) installed GRUB. Type "exit" to exit the chroot')
+
+    
 
 install()
