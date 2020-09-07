@@ -4,6 +4,7 @@ from os import system
 
 import argparse
 import subprocess
+import shutil
 import sys
 
 # -----------------------------------------
@@ -32,9 +33,9 @@ user_services = 'lightdm.service'
 
 # Utility functions
 def log(level, msg):
-    color = '\033[34m'
+    color = '\033[96m'
     if level == 'info':
-        color = '\033[34m'
+        color = '\033[96m'
     elif level == 'success':
         color = '\033[92m'
     elif level == 'warn':
@@ -92,7 +93,8 @@ def install():
 
     # Enter a chroot
     log('info', 'Entering a chroot, chrooting in and running installer with --chroot.')
-    system('arch-chroot /mnt python3 /root/base.py --chroot')
+    system('cp install.py /mnt/install.py')
+    system('arch-chroot /mnt python3 /mnt/install.py --chroot')
 
 def chroot_install():
     log('success', 'Successfully entered chroot with arch-chroot!')
@@ -174,7 +176,7 @@ def chroot_install():
 
     # Download the post install script
     log('info', 'Running post install script')
-    system('python3 /root/base.py --postinstall')
+    system('python3 install.py --postinstall')
 
 def post_install():    
     # Install sudo
@@ -199,7 +201,7 @@ def post_install():
 
     # Download user install script
     log('info', 'Running userinstall script..')
-    system(f'cp /root/install.py /home/{username}/install.py')
+    system(f'cp install.py /home/{username}/install.py')
     system(f'sudo -u {username} -H /bin/bash -c "python3 /home/{username}/install.py --user"')
 
 def user_install():
@@ -291,8 +293,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     # Check if we are in the installer environment first
-    (rc, _) = run('which pacstrap')
-    if rc != 0:
+    in_installer = shutil.which('pacstrap') is not None
+    if not in_installer:
         log('error', 'Failed to detect an installer environment')
         sys.exit(1)
 
