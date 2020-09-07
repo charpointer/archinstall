@@ -55,7 +55,7 @@ def install():
     # Download user install script
     log('info', 'Downloading user install script..')
     system(f'curl -L https://raw.githubusercontent.com/chxrlt/archinstall/master/install/userinstall.py > /home/{username}/userinstall.py')
+    system(f'chmod +x /home/{username}/postinstall.py')
 
-    system('exit && reboot')
-
+    log('success', 'To finish installing, type exit, login as the new user and run "python3 userinstall.py"!')
 install()

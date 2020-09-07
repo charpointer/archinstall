@@ -117,6 +117,10 @@ def install():
 
     log('success', 'Successfully(?) installed GRUB. Type "exit" to exit the chroot')
 
-    
+    # Download the post install script
+    log('info', 'Downloading post install script..')
+    system(f'curl -L https://raw.githubusercontent.com/chxrlt/archinstall/master/install/postinstall.py > /tmp/postinstall.py')
+    system('chmod +x /tmp/postinstall.py')
+    system('python3 /tmp/postinstall.py')
 
 install()
