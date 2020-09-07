@@ -94,7 +94,7 @@ def install():
     # Enter a chroot
     log('info', 'Entering a chroot, chrooting in and running installer with --chroot.')
     system('cp install.py /mnt/install.py')
-    system('arch-chroot /mnt python3 /mnt/install.py --chroot')
+    system('arch-chroot /mnt python3 install.py --chroot')
 
 def chroot_install():
     log('success', 'Successfully entered chroot with arch-chroot!')
@@ -289,14 +289,15 @@ if __name__ == '__main__':
 
     parser.add_argument('--chroot', action='store_true', help='Run install_chroot to install from within a chroot')
     parser.add_argument('--postinstall', action='store_true', help='Run the post installation script')
+    parser.add_argument('--user', action='store_true', help='Run the user installation script')
     
     args = parser.parse_args()
     
     # Check if we are in the installer environment first
+    # If this fails, we are either not in an Arch live installer or we are in a chroot
     in_installer = shutil.which('pacstrap') is not None
     if not in_installer:
-        log('error', 'Failed to detect an installer environment')
-        sys.exit(1)
+        log('warn', 'Failed to detect an installer environment, could just be in chroot')
 
     if args.chroot:
         log('success', 'pacstrap is present, we seem to be in the installer environment!')
@@ -305,5 +306,7 @@ if __name__ == '__main__':
         chroot_install()
     elif args.postinstall:
         post_install()
+    elif args.user:
+        user_install()
     else:
         install()
