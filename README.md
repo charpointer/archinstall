@@ -9,7 +9,7 @@
 ```
 
 ## Usage
-Run `./install.sh install`. The installer script will handle automatically calling itself from chroot etc.
+`curl -L https://git.io/JUnze > install.sh && chmod +x install.sh && ./install.sh install` 
 
 Make sure to edit `install.sh` before running, this is a breakdown of the options available for editing.
 

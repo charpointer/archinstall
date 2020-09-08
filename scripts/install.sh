@@ -15,6 +15,8 @@ timezone="Europe/London"
 lang="en_US"
 
 pascstrap_extras="vim"
+enable_multilib=true
+enable_aur=true
 
 user_packages="firefox lightdm lightdm-gtk-greeter pulseaudio xfce4"
 user_services=(lightdm.service)
@@ -108,12 +110,12 @@ chroot_install() {
 	hwclock --systohc
 
 	# Generate locales
-	log_info "Adding $locale to /etc/locale.gen"
+	log_info "Adding $lang to /etc/locale.gen"
 	sleep 2
 
-	echo "$locale.UTF-8 UTF-8" >> /etc/locale.gen
+	echo "$.UTF-8 UTF-8" >> /etc/locale.gen
 	if [ $? -ne 0 ]; then
-		info_error "Failed to automatically modify /etc/locale.gen, opening in vim"
+		log_error "Failed to automatically modify /etc/locale.gen, opening in vim"
 		vim /etc/locale.gen
 	fi
 
@@ -122,7 +124,7 @@ chroot_install() {
 	if [ $? -eq 0 ]; then
 		log_success "Successfully (re)generated locales" 
 	else
-		info_error "Failed to generate locales"
+		log_error "Failed to generate locales"
 		exit 1
 	fi
 
@@ -162,7 +164,7 @@ chroot_install() {
 		if [ $? -eq 0 ]; then
 			log_success "Successfully mounted $efipar to /boot/efi" 
 		else
-			info_error "Failed to mount $efipar to /boot/efi"
+			log_error "Failed to mount $efipar to /boot/efi"
 			exit 1
 		fi
 	fi
@@ -241,6 +243,18 @@ user_install() {
 		exit 1
 	fi
 
+	# Install yay
+	if [ "$enable_aur" = true ]; then
+		log_info "Installing yay for AUR support"
+		sudo pacman -S base-devel git
+		git clone https://aur.archlinux.org/yay.git
+		cd yay
+		makepkg -si
+
+		log_info "Cleaning up build files for yay"
+		rm -rf yay
+	fi
+
 	log_info "Installing packages for user $user"
 	sudo pacman -S $user_packages
 
@@ -258,6 +272,17 @@ user_install() {
 		# Check if the service was enabled
 		[ $? -eq 0 ] && log_success "Successfully enabled $service" || log_error "Failed to enable service $service"
 	done
+
+	# Enable multlib support
+	if [ "$enable_multilib" = true ]; then
+		log_info "Enabling multlib support"
+		multlib="
+[multilib]
+Include = /etc/pacman.d/mirrorlist
+"
+		echo "$multilib" >> /etc/pacman.conf
+		[ $? -eq 0 ] && log_success "Successfully enabled multilib support" || log_error "Failed to enable service multilib support"
+	fi
 
 	# Clean up
 	clear
