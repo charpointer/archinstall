@@ -17,6 +17,18 @@ user_packages="firefox lightdm lightdm-gtk-greeter pulseaudio xfce4"
 user_services=(lightdm.service)
 # ------------------------------------------------
 
+print_logo() {
+cat << EOF
+      _                _       _   _       
+  ___| |__   __ _ _ __| | ___ | |_| |_ ___ 
+ / __| '_ \ / _` | '__| |/ _ \| __| __/ _ \
+| (__| | | | (_| | |  | | (_) | |_| ||  __/
+ \___|_| |_|\__,_|_|  |_|\___/ \__|\__\___|
+                                           
+ charlotte's semi-automated arch install scripts
+EOF
+}
+
 log_info() {
     prefix="\e[0m[\e[1m\e[90m*INFO*\e[0m]"
     echo -e "$prefix $1"
@@ -38,6 +50,8 @@ log_error() {
 }
 
 install() {
+	print_logo
+
     log_info "Loading keymap $vconsole_keymap"
     loadkeys $vconsole_keymap
 
@@ -69,16 +83,21 @@ install() {
     genfstab -U /mnt >> /mnt/etc/fstab
 
     # Enter a chroot
-    log_info "Entering a chroot, chrooting in and running installer"
+    log_info "Entering a chroot, and continuing with the install"
     cp install.sh /mnt/install.sh
-    arch-chroot /mnt /bin/bash install.sh chrootinstall
+    arch-chroot /mnt /bin/bash install.sh chroot
 }
 
 chroot_install() {
     # The rest of the install continues in a chroot up until
     # creating users and installing user packages
 
+	clear
+	print_logo
+
     log_success "Successfully entered chroot!"
+	log_success "Most of this install is automated, so sit tight and grab a glass of soda"
+	sleep 2
 
     # Set the timezone
     log_info "Setting the timezone and running hwclock --systohc"
@@ -161,9 +180,11 @@ chroot_install() {
 
 post_install() {
     # Post installation for the installer
+	clear
+	print_logo
 
     # Install sudo, and the xorg server (for later on)
-    pacman -S sudo xorg
+    pacman -S --noconfirm sudo xorg
 
     # Create a new user account
     read -p "Enter your username: " username
@@ -178,8 +199,15 @@ post_install() {
     fi
 
     # Add the user to the sudoers file
+	log_warn "This script is being ran as root (maybe), trying to edit /etc/sudoers for you"
 	log_warn "Adding $username to /etc/sudoers, if this goes wrong you will need to edit manually"
-    echo "$username	ALL=(ALL) ALL" >> /etc/sudoers
+	echo "$username	ALL=(ALL) ALL" >> /etc/sudoers
+
+	if [ $? -eq 0 ]; then
+		log_success "Editing /etc/sudoers seemed to be successful."
+	else
+		log_error "Cannot edit /etc/sudoers, you will need to manually do it with \"visudo\"."
+	fi
 
 	# Copy the install script to the users home directory
 	cp install.sh /home/$username/install.sh
@@ -192,6 +220,8 @@ post_install() {
 user_install() {
 	# Install all the user packages
 	user=$(whoami)
+	clear
+	print_logo
 
 	# Sanity check to ensure we're not running as root
 	if [ "$user" == "root" ]; then
@@ -200,7 +230,7 @@ user_install() {
 	fi
 
 	log_info "Installing packages for user $user"
-	pacman -S $user_packages
+	sudo pacman -S $user_packages
 
 	# Start all the services
 	for service in ${user_services[*]}; do
@@ -210,7 +240,7 @@ user_install() {
 			# PulseAudio needs to be ran a user service
 			systemctl --user enable pulseaudio.service
 		else
-			systemctl enable $service
+			sudo systemctl enable $service
 		fi
 
 		# Check if the service was enabled
@@ -220,6 +250,7 @@ user_install() {
 
 partition() {
     clear
+	print_logo
     log_info "To list all, the disks type \"lsdisks\". To partition a disk, type \"pardisk\""
 
     exit_wizard="0"
@@ -253,13 +284,14 @@ partition() {
                         break;;
                     [Nn]*)
                         log_info "No need to make a swap partition, continuing.."
-                        break;;
+                        ;;
                 esac
+				
+				sleep 2
+            	log_info "Mounting $rootpar to /mnt"
+            	mount $rootpar /mnt
 
-                log_info "Mounting $rootpar to /mnt"
-                mount $rootpar /mnt
-
-                log_success "Finished. To exit the wizard, type \"exit\""
+            	log_success "Finished. To exit the wizard, type \"exit\""
 				;;
 
             exit   ) exit_wizard="1";;
