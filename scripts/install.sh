@@ -1,7 +1,10 @@
 #!/bin/bash
+
 # ------------------------------------------------
 # Config
 # ------------------------------------------------
+root_disk=""
+
 vconsole_keymap="uk"
 xorg_keymap="gb"
 ucode="intel" # amd for AMD machines
@@ -18,7 +21,7 @@ user_services=(lightdm.service)
 # ------------------------------------------------
 
 print_logo() {
-cat << EOF
+cat << "EOF"
       _                _       _   _       
   ___| |__   __ _ _ __| | ___ | |_| |_ ___ 
  / __| '_ \ / _` | '__| |/ _ \| __| __/ _ \
@@ -65,8 +68,9 @@ install() {
 
     # Update the system clock
     log_info "Running timedatectl to update the system clock"
-    #timedatectl set-ntp true
+    timedatectl set-ntp true
 
+    sleep 5
     # Partitioning
     log_info "Entering partition()"
     partition
@@ -104,9 +108,14 @@ chroot_install() {
     hwclock --systohc
 
     # Generate locales
-    log_info "Opening up /etc/locale.gen for manual editing"
+    log_info "Adding $locale to /etc/locale.gen"
     sleep 2
-    vim /etc/locale.gen
+
+    echo "$locale.UTF-8 UTF-8" >> /etc/locale.gen
+	if [ $? -ne 0 ]; then
+		info_error "Failed to automatically modify /etc/locale.gen, opening in vim"
+		vim /etc/locale.gen
+	fi
 
     log_info "Generating locales with locale-gen"
     locale-gen
@@ -146,6 +155,7 @@ chroot_install() {
     if [ "$bios" == "efi" ]; then
         # UEFI install
         read -p "Which partition is your EFI partition? " efipar
+		
         mkdir /boot/efi
         mount $efipar /boot/efi
 
@@ -164,9 +174,9 @@ chroot_install() {
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=grub --recheck
     else
         # BIOS/MBR install
-        log_info "Installing GRUB (BIOS/MBR)"
-        read -p "Which disk is your root partition located on? " mbrdisk
-        grub-install $mbrdisk
+        log_info "Installing GRUB (BIOS/MBR) to $root_disk"
+
+        grub-install $root_disk
     fi
 
     grub-mkconfig -o /boot/grub/grub.cfg
@@ -214,7 +224,7 @@ post_install() {
 
 	# Run the user install script as the newly created user
 	log_info "Running userinstall script as $username using sudo"
-	sudo -u $username -H /bin/bash "/home/$username/install.sh userinstall"
+	sudo -u $username -H /bin/bash -c "./home/$username/install.sh userinstall"
 }
 
 user_install() {
@@ -246,6 +256,18 @@ user_install() {
 		# Check if the service was enabled
 		[ $? -eq 0 ] && log_success "Successfully enabled $service" || log_error "Failed to enable service $service"
 	done
+
+	# Clean up
+    clear
+    print_logo
+
+	log_success "Installation finished. Unmounting drives and rebooting"
+	rm /install.sh
+	rm /home/$user/install.sh
+	umount /mnt
+
+	sleep 5
+	reboot
 }
 
 partition() {
@@ -261,6 +283,7 @@ partition() {
             lsdisks) fdisk -l;;
             pardisk) 
                 read -p "Which disk to partition? " disk
+				root_disk="$disk"
 
                 log_info "Running cfdisk on $disk"
                 cfdisk $disk
