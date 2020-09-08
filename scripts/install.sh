@@ -71,7 +71,7 @@ install() {
     # Enter a chroot
     log_info "Entering a chroot, chrooting in and running installer"
     cp install.sh /mnt/install.sh
-    arch-chroot /mnt bash install.sh chroot_install
+    arch-chroot /mnt /bin/bash install.sh chrootinstall
 }
 
 chroot_install() {
@@ -156,7 +156,7 @@ chroot_install() {
     systemctl enable dhcpcd
 
     # Run the post_install script
-    source ./install.sh && post_install
+    ./install.sh postinstall
 }
 
 post_install() {
@@ -170,7 +170,7 @@ post_install() {
     log_info "Creating a new user account for $username"
 
     useradd -m -G wheel $username
-    if [ $? -eq 0 ] then;
+    if [ $? -eq 0 ]; then
         log_success "Created a new user account for username"
     else
         log_error "Failed to create a user account for $username"
@@ -186,7 +186,7 @@ post_install() {
 
 	# Run the user install script as the newly created user
 	log_info "Running userinstall script as $username using sudo"
-	sudo -u $username -H /bin/bash -c "source /home/$username/install.sh && user_install"
+	sudo -u $username -H /bin/bash "/home/$username/install.sh userinstall"
 }
 
 user_install() {
@@ -259,9 +259,17 @@ partition() {
                 log_info "Mounting $rootpar to /mnt"
                 mount $rootpar /mnt
 
-                log_success "Finished. To exit the wizard, type \"exit\"";;
+                log_success "Finished. To exit the wizard, type \"exit\""
+				;;
 
             exit   ) exit_wizard="1";;
         esac
     done
 }
+
+case $1 in 
+	install) install;;
+	chroot)  chroot_install;;
+	postinstall) post_install;;
+	userinstall) user_install;;
+esac
